@@ -2,9 +2,11 @@
   <img width="250" height="250" src="https://raw.githubusercontent.com/museofficial/muse/master/.github/logo.png">
 </p>
 
-> [!WARNING]
-> I ([@codetheweb](https://github.com/codetheweb)) am no longer the primary maintainer of Muse. **If you use the Docker image, update your image source to `ghcr.io/museofficial/muse`.** We are currently publishing new releases to both `ghcr.io/museofficial/muse` and `codetheweb/muse`, but this may change in the future.
-> Thank you to all the people who stepped up to help maintain Muse!
+> [!NOTE]
+> **This is a personal fork of Muse with custom patches for personal use.**
+>
+> This fork contains custom modifications and is maintained separately from the upstream project.
+> For the official version, please visit [museofficial/muse](https://github.com/museofficial/muse).
 
 ------
 
@@ -46,36 +48,38 @@ When running a production instance, I recommend that you use the [latest release
 
 ### 🐳 Docker
 
-There are a variety of image tags available:
-- `:2`: versions >= 2.0.0
-- `:2.1`: versions >= 2.1.0 and < 2.2.0
-- `:2.1.1`: an exact version specifier
-- `:latest`: whatever the latest version is
+> [!NOTE]
+> This fork uses custom Docker images. Build your own image from this repository or use the official upstream images from [ghcr.io/museofficial/muse](https://github.com/museofficial/muse/pkgs/container/muse).
 
 (Replace empty config strings with correct values.)
 
 ```bash
-docker run -it -v "$(pwd)/data":/data -e DISCORD_TOKEN='' -e SPOTIFY_CLIENT_ID='' -e SPOTIFY_CLIENT_SECRET='' -e YOUTUBE_API_KEY='' ghcr.io/museofficial/muse:latest
+docker run -it -v "$(pwd)/data":/data -e DISCORD_TOKEN='' -e SPOTIFY_CLIENT_ID='' -e SPOTIFY_CLIENT_SECRET='' -e YOUTUBE_API_KEY='' ghcr.io/grainedlotus515/muse:latest
 ```
 
 This starts Muse and creates a data directory in your current directory.
 
-You can also store your tokens in an environment file and make it available to your container. By default, the container will look for a `/config` environment file. You can customize this path with the `ENV_FILE` environment variable to use with, for example, [docker secrets](https://docs.docker.com/engine/swarm/secrets/). 
+You can also store your tokens in an environment file and make it available to your container. By default, the container will look for a `/config` environment file. You can customize this path with the `ENV_FILE` environment variable to use with, for example, [docker secrets](https://docs.docker.com/engine/swarm/secrets/).
 
 **Docker Compose**:
 
 ```yaml
 services:
   muse:
-    image: ghcr.io/museofficial/muse:latest
-    restart: always
+    image: ghcr.io/grainedlotus515/muse:latest
+    container_name: muse
+    hostname: muse
+    restart: unless-stopped
     volumes:
-      - ./muse:/data
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ${DOCKER_VOLUME_STORAGE:-/mnt/docker-volumes}/muse:/data
     environment:
-      - DISCORD_TOKEN=
-      - YOUTUBE_API_KEY=
-      - SPOTIFY_CLIENT_ID=
-      - SPOTIFY_CLIENT_SECRET=
+      - ENABLE_SPONSORBLOCK=true
+      - DISCORD_TOKEN=${DISCORD_TOKEN:?DISCORD_TOKEN must be set}
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY:?YOUTUBE_API_KEY must be set}
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID:?SPOTIFY_CLIENT_ID must be set}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET:?SPOTIFY_CLIENT_SECRET must be set}
 ```
 
 ### Node.js
@@ -84,11 +88,10 @@ services:
 * Node.js (18.17.0 or latest 18.xx.xx is required and latest 18.x.x LTS is recommended) (Version 18 due to opus dependency)
 * ffmpeg (4.1 or later)
 
-1. `git clone https://github.com/museofficial/muse.git && cd muse`
+1. Clone this fork: `git clone https://github.com/GrainedLotus515/muse.git && cd muse`
 2. Copy `.env.example` to `.env` and populate with values
-3. I recommend checking out a tagged release with `git checkout v[latest release]`
-4. `yarn install` (or `npm i`)
-5. `yarn start` (or `npm run start`)
+3. `yarn install` (or `npm i`)
+4. `yarn start` (or `npm run start`)
 
 **Note**: if you're on Windows, you may need to manually set the ffmpeg path. See [#345](https://github.com/museofficial/muse/issues/345) for details.
 
@@ -100,7 +103,7 @@ By default, Muse limits the total cache size to around 2 GB. If you want to chan
 
 ### SponsorBlock
 
-Muse can skip non-music segments at the beginning or end of a Youtube music video (Using [SponsorBlock](https://sponsor.ajay.app/)). It is disabled by default. If you want to enable it, set the environment variable `ENABLE_SPONSORBLOCK=true` or uncomment it in your .env.
+Muse can skip non-music segments at the beginning or end of a Youtube music video (Using [SponsorBlock](https://sponsor.ajay.app/)). It is enabled by default. If you want to disable it, set the environment variable `ENABLE_SPONSORBLOCK=false`.
 Being a community project, the server may be down or overloaded. When it happen, Muse will skip requests to SponsorBlock for a few minutes. You can change the skip duration by setting the value of `SPONSORBLOCK_TIMEOUT`.
 
 ### Custom Bot Status
@@ -146,4 +149,3 @@ You can configure the bot to automatically turn down the volume when people are 
 - `/config set-reduce-vol-when-voice true` - Enable automatic volume reduction
 - `/config set-reduce-vol-when-voice false` - Disable automatic volume reduction
 - `/config set-reduce-vol-when-voice-target <volume>` - Set the target volume percentage when people speak (0-100, default is 70)
-

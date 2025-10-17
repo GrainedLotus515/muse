@@ -1,12 +1,13 @@
 name: Make release & publish Docker image
 
+# Personal fork workflow for GrainedLotus515/muse
 on:
   push:
     tags:
-    - 'v*'
+      - "v*"
 
 env:
-  REGISTRY_IMAGE: ghcr.io/museofficial/muse
+  REGISTRY_IMAGE: ghcr.io/grainedlotus515/muse
 
 jobs:
   publish:
@@ -32,12 +33,6 @@ jobs:
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -55,7 +50,6 @@ jobs:
         with:
           push: true
           tags: |
-            codetheweb/muse:${{ github.sha }}-${{ matrix.tagged-platform }}
             ${{ env.REGISTRY_IMAGE }}:${{ github.sha }}-${{ matrix.tagged-platform }}
           platforms: ${{ matrix.build-arch }}
           build-args: |
@@ -77,12 +71,6 @@ jobs:
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v1
 
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -90,30 +78,14 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get tags (Docker Hub)
-        id: get-tags-dockerhub
-        uses: Surgo/docker-smart-tag-action@v1
-        with:
-          docker_image: codetheweb/muse
-
       - name: Get tags (ghcr.io)
         id: get-tags-ghcr
         uses: Surgo/docker-smart-tag-action@v1
         with:
           docker_image: ${{ env.REGISTRY_IMAGE }}
 
-      - name: Combine tags (Docker Hub)
-        run: docker buildx imagetools create $(echo '${{ steps.get-tags-dockerhub.outputs.tag }}' | tr "," "\0" | xargs -0 printf -- '-t %s ') 'codetheweb/muse:${{ github.sha }}-arm64' 'codetheweb/muse:${{ github.sha }}-amd64'
-
       - name: Combine tags (GitHub Container Registry)
         run: docker buildx imagetools create $(echo '${{ steps.get-tags-ghcr.outputs.tag }}' | tr "," "\0" | xargs -0 printf -- '-t %s ') '${{ env.REGISTRY_IMAGE }}:${{ github.sha }}-arm64' '${{ env.REGISTRY_IMAGE }}:${{ github.sha }}-amd64'
-
-      - name: Update Docker Hub description
-        uses: peter-evans/dockerhub-description@v2.4.3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          repository: codetheweb/muse
 
   release:
     name: Create GitHub release

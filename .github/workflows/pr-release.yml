@@ -1,4 +1,6 @@
 name: Release snapshot of PR
+
+# Personal fork workflow for GrainedLotus515/muse
 on:
   workflow_run:
     workflows: ["Build snapshot of PR"]
@@ -6,7 +8,7 @@ on:
       - completed
 
 env:
-  REGISTRY_IMAGE: ghcr.io/museofficial/muse
+  REGISTRY_IMAGE: ghcr.io/grainedlotus515/muse
 
 jobs:
   release-and-comment:

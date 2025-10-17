@@ -1,9 +1,10 @@
 name: Build snapshot of PR
 
+# Personal fork workflow for GrainedLotus515/muse
 on: pull_request
 
 env:
-  REGISTRY_IMAGE: ghcr.io/museofficial/muse
+  REGISTRY_IMAGE: ghcr.io/grainedlotus515/muse
 
 jobs:
   build:
