@@ -1,5 +1,5 @@
-import {Innertube, UniversalCache} from 'youtubei.js';
-import debug from '../utils/debug.js';
+import { Innertube, UniversalCache } from "youtubei.js";
+import debug from "../utils/debug.js";
 
 export interface YouTubeFormat {
   itag: number;
@@ -26,7 +26,7 @@ export interface YouTubeVideoInfo {
   author: string;
   lengthSeconds: number;
   isLive: boolean;
-  thumbnails: Array<{url: string; width: number; height: number}>;
+  thumbnails: Array<{ url: string; width: number; height: number }>;
   formats: YouTubeFormat[];
   description?: string;
   viewCount?: number;
@@ -38,7 +38,7 @@ export class YouTubeError extends Error {
     public readonly code?: string,
   ) {
     super(message);
-    this.name = 'YouTubeError';
+    this.name = "YouTubeError";
   }
 }
 
@@ -62,7 +62,7 @@ export default class YouTubeService {
 
     this.initPromise = (async () => {
       try {
-        debug('[YouTube.js] Initializing client...');
+        debug("[YouTube.js] Initializing client...");
         const startTime = Date.now();
 
         this.innertube = await Innertube.create({
@@ -93,7 +93,7 @@ export default class YouTubeService {
     await this.init();
 
     if (!this.innertube) {
-      throw new YouTubeError('YouTube client not initialized');
+      throw new YouTubeError("YouTube client not initialized");
     }
 
     const startTime = Date.now();
@@ -107,23 +107,23 @@ export default class YouTubeService {
       const elapsed = Date.now() - startTime;
 
       debug(`[YouTube.js] Successfully fetched info in ${elapsed}ms`);
-      debug(`[YouTube.js] Title: ${info.basic_info.title ?? 'Unknown'}`);
-      debug(`[YouTube.js] Author: ${info.basic_info.author ?? 'Unknown'}`);
+      debug(`[YouTube.js] Title: ${info.basic_info.title ?? "Unknown"}`);
+      debug(`[YouTube.js] Author: ${info.basic_info.author ?? "Unknown"}`);
       debug(`[YouTube.js] Duration: ${info.basic_info.duration ?? 0}s`);
       debug(`[YouTube.js] Is live: ${String(info.basic_info.is_live)}`);
 
       // Extract and parse formats
-      const formats = this.parseFormats(info);
+      const formats = await this.parseFormats(info);
       debug(`[YouTube.js] Formats available: ${formats.length}`);
 
       return {
         id: info.basic_info.id ?? cleanId,
-        title: info.basic_info.title ?? 'Unknown Title',
-        author: info.basic_info.author ?? 'Unknown Author',
+        title: info.basic_info.title ?? "Unknown Title",
+        author: info.basic_info.author ?? "Unknown Author",
         lengthSeconds: info.basic_info.duration ?? 0,
         isLive: info.basic_info.is_live ?? false,
         thumbnails:
-          info.basic_info.thumbnail?.map(t => ({
+          info.basic_info.thumbnail?.map((t) => ({
             url: t.url,
             width: t.width,
             height: t.height,
@@ -136,7 +136,7 @@ export default class YouTubeService {
       };
     } catch (error: unknown) {
       const elapsed = Date.now() - startTime;
-      const err = error as {message: string; code?: string};
+      const err = error as { message: string; code?: string };
 
       debug(`[YouTube.js] Error after ${elapsed}ms: ${err.message}`);
 
@@ -151,7 +151,7 @@ export default class YouTubeService {
    * Parse formats from YouTube.js response
    */
   /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
-  private parseFormats(info: any): YouTubeFormat[] {
+  private async parseFormats(info: any): Promise<YouTubeFormat[]> {
     const formats: YouTubeFormat[] = [];
 
     try {
@@ -159,25 +159,35 @@ export default class YouTubeService {
       const streamingData = info.streaming_data;
 
       if (!streamingData) {
-        debug('[YouTube.js] No streaming data available');
+        debug("[YouTube.js] No streaming data available");
         return formats;
       }
 
       // Parse adaptive formats (audio and video separate)
       if (streamingData.adaptive_formats) {
         for (const format of streamingData.adaptive_formats) {
-          formats.push(
-            this.parseFormat(format, info.basic_info.is_live || false),
+          const parsed = await this.parseFormat(
+            format,
+            info.basic_info.is_live || false,
           );
+
+          if (parsed) {
+            formats.push(parsed);
+          }
         }
       }
 
       // Parse combined formats (audio + video)
       if (streamingData.formats) {
         for (const format of streamingData.formats) {
-          formats.push(
-            this.parseFormat(format, info.basic_info.is_live || false),
+          const parsed = await this.parseFormat(
+            format,
+            info.basic_info.is_live || false,
           );
+
+          if (parsed) {
+            formats.push(parsed);
+          }
         }
       }
 
@@ -195,28 +205,49 @@ export default class YouTubeService {
    * Parse a single format object
    */
   /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
-  private parseFormat(format: any, isLive: boolean): YouTubeFormat {
-    const mimeType = format.mime_type ?? '';
-    const mimeTypeParts = mimeType.split(';');
-    const baseType = mimeTypeParts[0] ?? '';
-    const container = baseType.split('/')[1] ?? 'unknown';
+  private async parseFormat(
+    format: any,
+    isLive: boolean,
+  ): Promise<YouTubeFormat | null> {
+    const mimeType = format.mime_type ?? "";
+    const mimeTypeParts = mimeType.split(";");
+    const baseType = mimeTypeParts[0] ?? "";
+    const container = baseType.split("/")[1] ?? "unknown";
     const codecsMatch = mimeType.match(/codecs="([^"]+)"/);
-    const codecs = codecsMatch ? codecsMatch[1] : '';
+    const codecs = codecsMatch ? codecsMatch[1] : "";
 
     const audioCodec = this.extractAudioCodec(codecs);
     const videoCodec = this.extractVideoCodec(codecs);
 
+    let url = typeof format.url === "string" ? format.url : "";
+
+    if (!url && typeof format.decipher === "function") {
+      try {
+        url = await format.decipher(this.innertube?.session.player);
+      } catch (error: unknown) {
+        const err = error as Error;
+        debug(
+          `[YouTube.js] Failed to decipher format ${format.itag ?? "unknown"}: ${err.message}`,
+        );
+      }
+    }
+
+    if (!url) {
+      debug(
+        `[YouTube.js] Skipping format ${format.itag ?? "unknown"} due to missing URL`,
+      );
+      return null;
+    }
+
     return {
       itag: format.itag ?? 0,
-      url: format.decipher
-        ? format.decipher(this.innertube?.session.player)
-        : (format.url ?? ''),
+      url,
       mimeType,
       bitrate: format.bitrate ?? 0,
       audioBitrate: format.audio_bitrate,
       audioSampleRate: format.audio_sample_rate,
       audioChannels: format.audio_channels,
-      quality: format.quality ?? 'unknown',
+      quality: format.quality ?? "unknown",
       qualityLabel: format.quality_label,
       hasAudio: format.has_audio ?? false,
       hasVideo: format.has_video ?? false,
@@ -233,7 +264,7 @@ export default class YouTubeService {
    * Extract audio codec from codecs string
    */
   private extractAudioCodec(codecs: string): string | undefined {
-    const audioCodecs = ['opus', 'mp4a', 'vorbis', 'aac'];
+    const audioCodecs = ["opus", "mp4a", "vorbis", "aac"];
     const lowerCodecs = codecs.toLowerCase();
 
     for (const codec of audioCodecs) {
@@ -249,7 +280,7 @@ export default class YouTubeService {
    * Extract video codec from codecs string
    */
   private extractVideoCodec(codecs: string): string | undefined {
-    const videoCodecs = ['avc1', 'vp9', 'vp8', 'av01'];
+    const videoCodecs = ["avc1", "vp9", "vp8", "av01"];
     const lowerCodecs = codecs.toLowerCase();
 
     for (const codec of videoCodecs) {
@@ -270,10 +301,10 @@ export default class YouTubeService {
       `[YouTube.js] Selecting best audio format from ${info.formats.length} available formats`,
     );
 
-    const audioFormats = info.formats.filter(f => f.hasAudio && !f.hasVideo);
+    const audioFormats = info.formats.filter((f) => f.hasAudio && !f.hasVideo);
 
     if (audioFormats.length === 0) {
-      debug('[YouTube.js] No audio-only formats available');
+      debug("[YouTube.js] No audio-only formats available");
       return null;
     }
 
@@ -282,7 +313,7 @@ export default class YouTubeService {
     // For live streams, prefer specific high-quality formats
     if (info.isLive) {
       const liveFormats = audioFormats
-        .filter(f => f.isLive)
+        .filter((f) => f.isLive)
         .sort((a, b) => (b.audioBitrate ?? 0) - (a.audioBitrate ?? 0));
 
       if (liveFormats.length > 0) {
@@ -295,10 +326,10 @@ export default class YouTubeService {
 
     // Prefer opus codec in webm container @ 48kHz (best for Discord)
     const opusFormats = audioFormats.filter(
-      f =>
-        f.audioCodec === 'opus'
-        && f.container === 'webm'
-        && f.audioSampleRate === '48000',
+      (f) =>
+        f.audioCodec === "opus" &&
+        f.container === "webm" &&
+        f.audioSampleRate === "48000",
     );
 
     if (opusFormats.length > 0) {
@@ -328,9 +359,9 @@ export default class YouTubeService {
   private extractVideoId(videoIdOrUrl: string): string {
     // Already a video ID
     if (
-      videoIdOrUrl.length === 11
-      && !videoIdOrUrl.includes('/')
-      && !videoIdOrUrl.includes('?')
+      videoIdOrUrl.length === 11 &&
+      !videoIdOrUrl.includes("/") &&
+      !videoIdOrUrl.includes("?")
     ) {
       return videoIdOrUrl;
     }
@@ -361,7 +392,7 @@ export default class YouTubeService {
     await this.init();
 
     if (!this.innertube) {
-      throw new YouTubeError('YouTube client not initialized');
+      throw new YouTubeError("YouTube client not initialized");
     }
 
     const cleanId = this.extractVideoId(videoId);
@@ -369,12 +400,12 @@ export default class YouTubeService {
 
     try {
       const stream = await this.innertube.download(cleanId, {
-        type: 'audio',
-        quality: 'best',
-        format: 'opus',
+        type: "audio",
+        quality: "best",
+        format: "opus",
       });
 
-      debug('[YouTube.js] Audio stream created successfully');
+      debug("[YouTube.js] Audio stream created successfully");
       return stream;
     } catch (error: unknown) {
       const err = error as Error;
@@ -393,14 +424,14 @@ export default class YouTubeService {
     await this.init();
 
     if (!this.innertube) {
-      throw new YouTubeError('YouTube client not initialized');
+      throw new YouTubeError("YouTube client not initialized");
     }
 
     debug(`[YouTube.js] Searching for: ${query} (limit: ${limit})`);
 
     try {
       const results = await this.innertube.search(query, {
-        type: 'video',
+        type: "video",
       });
 
       const videos: YouTubeVideoInfo[] = [];
@@ -408,9 +439,9 @@ export default class YouTubeService {
       // Fetch video info in parallel instead of sequentially
       const videoPromises = results.videos
         .slice(0, limit)
-        .filter(item => item.type === 'Video' && 'id' in item && item.id)
-        .map(async item => {
-          if ('id' in item && item.id) {
+        .filter((item) => item.type === "Video" && "id" in item && item.id)
+        .map(async (item) => {
+          if ("id" in item && item.id) {
             try {
               return await this.getInfo(item.id);
             } catch (error: unknown) {
