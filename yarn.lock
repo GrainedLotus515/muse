@@ -631,13 +631,6 @@
   dependencies:
     "@types/node" "*"
 
-"@types/fs-capacitor@^8.0.2":
-  version "8.0.2"
-  resolved "https://registry.yarnpkg.com/@types/fs-capacitor/-/fs-capacitor-8.0.2.tgz#8c0ec179fcb88961423f9e7cd2571511a499d37a"
-  integrity sha512-uHCqZVh7Ofv9ROqq1wXH3wENCGGX0p4EWLKOquMILiapG3nlTBfL6tXiknGKWp07RtSIugWVCj21cp/eo1ebLQ==
-  dependencies:
-    fs-capacitor "*"
-
 "@types/http-cache-semantics@^4.0.2":
   version "4.0.4"
   resolved "https://registry.npmjs.org/@types/http-cache-semantics/-/http-cache-semantics-4.0.4.tgz"
@@ -2388,7 +2381,7 @@ formidable@^1.2.2:
   resolved "https://registry.npmjs.org/formidable/-/formidable-1.2.6.tgz"
   integrity sha512-KcpbcpuLNOwrEjnbpMC0gS+X8ciDoZE1kkqzat4a8vrprf+s9pKNQ/QIwWfbfs4ltgmFl3MD177SNTkve3BwGQ==
 
-fs-capacitor@*, fs-capacitor@^8.0.0:
+fs-capacitor@^8.0.0:
   version "8.0.0"
   resolved "https://registry.yarnpkg.com/fs-capacitor/-/fs-capacitor-8.0.0.tgz#a95cbcf58dd50750fe718a03ec051961ef4e61f4"
   integrity sha512-+Lk6iSKajdGw+7XYxUkwIzreJ2G1JFlYOdnKJv5PzwFLVsoJYBpCuS7WPIUSNT1IbQaEWT1nhYU63Ud03DyzLA==
