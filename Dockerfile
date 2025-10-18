@@ -6,6 +6,7 @@ FROM node:22-bookworm-slim AS base
 RUN apt-get update \
     && apt-get install --no-install-recommends -y \
     ffmpeg \
+    yt-dlp \
     tini \
     openssl \
     ca-certificates \
