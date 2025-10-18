@@ -302,17 +302,27 @@ export default class YouTubeService {
     );
 
     const audioFormats = info.formats.filter((f) => f.hasAudio && !f.hasVideo);
+    const fallbackFormats =
+      audioFormats.length > 0
+        ? audioFormats
+        : info.formats.filter((f) => f.hasAudio);
 
-    if (audioFormats.length === 0) {
-      debug("[YouTube.js] No audio-only formats available");
+    if (fallbackFormats.length === 0) {
+      debug("[YouTube.js] No playable formats with audio available");
       return null;
     }
 
-    debug(`[YouTube.js] Found ${audioFormats.length} audio-only formats`);
+    if (audioFormats.length === 0) {
+      debug(
+        `[YouTube.js] No audio-only formats available, falling back to mixed audio/video`,
+      );
+    } else {
+      debug(`[YouTube.js] Found ${audioFormats.length} audio-only formats`);
+    }
 
     // For live streams, prefer specific high-quality formats
     if (info.isLive) {
-      const liveFormats = audioFormats
+      const liveFormats = fallbackFormats
         .filter((f) => f.isLive)
         .sort((a, b) => (b.audioBitrate ?? 0) - (a.audioBitrate ?? 0));
 
@@ -325,7 +335,7 @@ export default class YouTubeService {
     }
 
     // Prefer opus codec in webm container @ 48kHz (best for Discord)
-    const opusFormats = audioFormats.filter(
+    const opusFormats = fallbackFormats.filter(
       (f) =>
         f.audioCodec === "opus" &&
         f.container === "webm" &&
@@ -343,7 +353,7 @@ export default class YouTubeService {
     }
 
     // Fallback to highest bitrate audio format
-    const bestAudio = audioFormats.sort(
+    const bestAudio = fallbackFormats.sort(
       (a, b) => (b.audioBitrate ?? 0) - (a.audioBitrate ?? 0),
     )[0];
     debug(
