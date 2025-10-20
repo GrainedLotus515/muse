@@ -496,22 +496,15 @@
   dependencies:
     "@octokit/openapi-types" "^12.11.0"
 
-"@prisma/client@4.16.0":
-  version "4.16.0"
-  resolved "https://registry.npmjs.org/@prisma/client/-/client-4.16.0.tgz"
-  integrity sha512-CBD+5IdZPiavhLkQokvsz1uz4r9ppixaqY/ajybWs4WXNnsDVMBKEqN3BiPzpSo79jiy22VKj/67pqt4VwIg9w==
-  dependencies:
-    "@prisma/engines-version" "4.16.0-66.b20ead4d3ab9e78ac112966e242ded703f4a052c"
+"@prisma/client@6.17.1":
+  version "6.17.1"
+  resolved "https://registry.yarnpkg.com/@prisma/client/-/client-6.17.1.tgz#308f3bf7d050316578aa7fd6cd9deca671561f04"
+  integrity sha512-zL58jbLzYamjnNnmNA51IOZdbk5ci03KviXCuB0Tydc9btH2kDWsi1pQm2VecviRTM7jGia0OPPkgpGnT3nKvw==
 
 "@prisma/debug@5.21.1":
   version "5.21.1"
   resolved "https://registry.npmjs.org/@prisma/debug/-/debug-5.21.1.tgz"
   integrity sha512-uY8SAhcnORhvgtOrNdvWS98Aq/nkQ9QDUxrWAgW8XrCZaI3j2X7zb7Xe6GQSh6xSesKffFbFlkw0c2luHQviZA==
-
-"@prisma/engines-version@4.16.0-66.b20ead4d3ab9e78ac112966e242ded703f4a052c":
-  version "4.16.0-66.b20ead4d3ab9e78ac112966e242ded703f4a052c"
-  resolved "https://registry.npmjs.org/@prisma/engines-version/-/engines-version-4.16.0-66.b20ead4d3ab9e78ac112966e242ded703f4a052c.tgz"
-  integrity sha512-tMWAF/qF00fbUH1HB4Yjmz6bjh7fzkb7Y3NRoUfMlHu6V+O45MGvqwYxqwBjn1BIUXkl3r04W351D4qdJjrgvA==
 
 "@prisma/engines-version@5.21.1-1.bf0e5e8a04cada8225617067eaa03d041e2bba36":
   version "5.21.1-1.bf0e5e8a04cada8225617067eaa03d041e2bba36"
